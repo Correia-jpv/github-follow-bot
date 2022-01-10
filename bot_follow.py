@@ -39,7 +39,7 @@ sleepSecondsLimitedMax = int(args.sleep_max_limited or 1500)
 
 load_dotenv()
 USER = os.getenv("USER")
-TOKEN = os.getenv("PAT")
+TOKEN = os.getenv("TOKEN")
 
 
 bot = GithubAPIBot(
