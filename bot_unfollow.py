@@ -7,26 +7,18 @@ from GithubAPIBot import GithubAPIBot
 
 # Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("-a", "--all", help="Unfollow all your followers")
-parser.add_argument("-f", "--file", help="Followers File to Unfollow")
+parser.add_argument("-a", "--all", help="Unfollow all your followings", action="store_true")
+parser.add_argument("-fo", "--followers", help="Only unfollow users who already follow you", action="store_true")
+parser.add_argument("-nf", "--non-followers", help="Only unfollow users who don't follow you back", action="store_true")
+parser.add_argument("-f", "--file", help="File with usernames to Unfollow")
 parser.add_argument("-m", "--max-unfollow", help="Max Number of People to Unfollow")
+parser.add_argument("-smin", "--sleep-min", help="Min Number of range to randomize sleep seconds between actions")
+parser.add_argument("-smax", "--sleep-max", help="Max Number of range to randomize sleep seconds between actions")
 parser.add_argument(
-    "-smin", "--sleep-min", help="Min Number of range to randomize sleep seconds between actions", action="store_true"
+    "-slmin", "--sleep-min-limited", help="Min Number of range to randomize sleep seconds when account limited"
 )
 parser.add_argument(
-    "-smax", "--sleep-max", help="Max Number of range to randomize sleep seconds between actions", action="store_true"
-)
-parser.add_argument(
-    "-slmin",
-    "--sleep-min-limited",
-    help="Min Number of range to randomize sleep seconds when account limited",
-    action="store_true",
-)
-parser.add_argument(
-    "-slmax",
-    "--sleep-max-limited",
-    help="Max Number of range to randomize sleep seconds when account limited",
-    action="store_true",
+    "-slmax", "--sleep-max-limited", help="Max Number of range to randomize sleep seconds when account limited"
 )
 args = parser.parse_args()
 
@@ -51,16 +43,29 @@ bot = GithubAPIBot(
 )
 
 
-# Grab all users to unfollow from given user
+# Grab all following users
 if args.all:
     bot.usersToAction.extend(bot.followings)
 else:
-    # Grab users from given file
+    # Grab following users from given file
     if args.file:
-        bot.usersToAction.extend(args.file)
-    # Grab all users who already follow back
-    if args.file:
-        bot.usersToAction.extend(args.file)
+        with open(args.file, "r+") as file:
+            try:
+                fileUsers = json.load(file)
+            except:
+                raise ValueError("\n JSON file is in incorrect format.")
+            followedFileUsers = [v for v in bot.followings if v in fileUsers]
+            bot.usersToAction.extend(followedFileUsers)
+
+    # Grab following users who are followers
+    if args.followers:
+        bot.getFollowers(following=True)
+
+    # Grab following users who aren't followers
+    if args.non_followers:
+        bot.getFollowers(following=True)
+        nonFollowersFollowings = [v for v in bot.followings if v not in bot.usersToAction]
+        bot.usersToAction.extend(nonFollowersFollowings)
 
 
 # Write users to be unfollowed to file

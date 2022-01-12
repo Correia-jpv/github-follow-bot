@@ -8,27 +8,17 @@ from GithubAPIBot import GithubAPIBot
 
 # Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("-t", "--user-target", help="Target user to grab followers from")
+parser.add_argument("-t", "--user-target", help="Follow the followers of a target user")
 parser.add_argument("-f", "--file", help="Follow users from a pre-generated file")
-parser.add_argument("-p", "--popular", help="Follow the most popular users' followers from a given country")
-parser.add_argument("-m", "--max-follow", help="Max number of followers to follow")
+parser.add_argument("-p", "--popular", help="Follow the followers of the most popular users from a given country")
+parser.add_argument("-m", "--max-follow", help="Max number of users to follow")
+parser.add_argument("-smin", "--sleep-min", help="Min number of range to randomize sleep seconds between actions")
+parser.add_argument("-smax", "--sleep-max", help="Max number of range to randomize sleep seconds between actions")
 parser.add_argument(
-    "-smin", "--sleep-min", help="Min number of range to randomize sleep seconds between actions", action="store_true"
+    "-slmin", "--sleep-min-limited", help="Min number of range to randomize sleep seconds when account limited"
 )
 parser.add_argument(
-    "-smax", "--sleep-max", help="Max number of range to randomize sleep seconds between actions", action="store_true"
-)
-parser.add_argument(
-    "-slmin",
-    "--sleep-min-limited",
-    help="Min number of range to randomize sleep seconds when account limited",
-    action="store_true",
-)
-parser.add_argument(
-    "-slmax",
-    "--sleep-max-limited",
-    help="Max number of range to randomize sleep seconds when account limited",
-    action="store_true",
+    "-slmax", "--sleep-max-limited", help="Max number of range to randomize sleep seconds when account limited"
 )
 args = parser.parse_args()
 
@@ -84,7 +74,13 @@ if args.user_target:
 
 # Grab users from given file
 if args.file:
-    bot.usersToAction.extend(args.file)
+    with open(args.file, "r+") as file:
+        try:
+            fileUsers = json.load(file)
+        except:
+            raise ValueError("\n JSON file is in incorrect format.")
+        fileUsersNotFollowed = [v for v in bot.followings if v not in fileUsers]
+        bot.usersToAction.extend(fileUsersNotFollowed)
 
 
 # Write users to be followed to file

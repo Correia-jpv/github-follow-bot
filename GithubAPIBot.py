@@ -133,7 +133,7 @@ class GithubAPIBot:
     def followings(self, value):
         self.__followings = value
 
-    def getUsers(self, url="", maxAction=None):
+    def getUsers(self, url="", maxAction=None, following=False):
         users = []
 
         try:
@@ -167,7 +167,12 @@ class GithubAPIBot:
                         break
 
                 # Add username if it's not being followed already
-                if not (user["login"] in self.followings):
+                if (
+                    not following
+                    and not (user["login"] in self.followings)
+                    or following
+                    and (user["login"] in self.followings)
+                ):
                     users.append(user["login"])
 
             # Check if we already have enough usernames
@@ -177,65 +182,73 @@ class GithubAPIBot:
 
         return users
 
-    def getFollowers(self, username=None):
+    def getFollowers(self, username=None, following=None):
         if username == None:
             username = self.username
-        print("\nGrabbing " + username + "'s followers\n")
+        print(f"\nGrabbing {username}'s followers.\n")
         self.usersToAction.extend(
-            self.getUsers("https://api.github.com/users/" + username + "/followers", self.maxAction)
+            self.getUsers(
+                url=f"https://api.github.com/users/{username}/followers",
+                maxAction=self.maxAction,
+                following=following,
+            )
         )
 
-    def getFollowings(self, username=None, maxAction=None):
+    def getFollowings(self, username=None):
         if username == None:
             username = self.username
-        print("\nGrabbing " + username + "'s followings.\n")
-        self.followings.extend(self.getUsers("https://api.github.com/users/" + username + "/following", maxAction))
+        print(f"\nGrabbing {username}'s followings.\n")
+        self.followings.extend(self.getUsers(url=f"https://api.github.com/users/{username}/following"))
 
     def run(self, action):
-        # Users to follow/unfollow must not exceed the given max
-        if self.maxAction != None:
-            self.usersToAction = self.usersToAction[: min(len(self.usersToAction), int(self.maxAction))]
+        if len(self.usersToAction) == 0:
+            print(f"Nothing to {action}")
+        else:
 
-        # Start follow/unfollow
-        print("\nStarting to " + action + ".\n")
-        users = tqdm(
-            self.usersToAction,
-            initial=1,
-            dynamic_ncols=True,
-            smoothing=True,
-            bar_format="[PROGRESS] {n_fmt}/{total_fmt} |{l_bar}{bar}|",
-            leave=False,
-        )
-        for user in users:
+            # Users to follow/unfollow must not exceed the given max
+            if self.maxAction != None:
+                self.usersToAction = self.usersToAction[: min(len(self.usersToAction), int(self.maxAction))]
 
-            # Follow/unfollow user
-            try:
-                if action == "follow":
-                    res = self.session.put("https://api.github.com/user/following/" + user)
-                else:
-                    res = self.session.delete("https://api.github.com/user/following/" + user)
-            except requests.exceptions.RequestException as e:
-                raise SystemExit(e)
-
-            # Unsuccessful
-            if res.status_code != 204:
-                sleepSeconds = random.randint(self.sleepSecondsLimitedMin, self.sleepSecondsLimitedMax)
-            # Successful
-            else:
-                sleepSeconds = random.randint(self.sleepSecondsActionMin, self.sleepSecondsActionMax)
-
-            # Sleep
-            sleepSecondsObj = list(range(0, sleepSeconds))
-            sleepSecondsBar = tqdm(
-                sleepSecondsObj,
+            # Start follow/unfollow
+            print(f"\nStarting to {action}.\n")
+            users = tqdm(
+                self.usersToAction,
+                initial=1,
                 dynamic_ncols=True,
                 smoothing=True,
-                bar_format="[SLEEPING] {n_fmt}s/{total_fmt}s |{l_bar}{bar}|",
+                bar_format="[PROGRESS] {n_fmt}/{total_fmt} |{l_bar}{bar}|",
+                leave=False,
             )
-            for second in sleepSecondsBar:
-                time.sleep(1)
+            for user in users:
 
-        print("\n\nFinished " + action + "ing!")
+                # Follow/unfollow user
+                try:
+                    if action == "follow":
+                        res = self.session.put(f"https://api.github.com/user/following/{user}")
+                    else:
+                        res = self.session.delete(f"https://api.github.com/user/following/{user}")
+                except requests.exceptions.RequestException as e:
+                    raise SystemExit(e)
+
+                # Unsuccessful
+                if res.status_code != 204:
+                    sleepSeconds = random.randint(self.sleepSecondsLimitedMin, self.sleepSecondsLimitedMax)
+                # Successful
+                else:
+                    sleepSeconds = random.randint(self.sleepSecondsActionMin, self.sleepSecondsActionMax)
+
+                # Sleep
+                sleepSecondsObj = list(range(0, sleepSeconds))
+                sleepSecondsBar = tqdm(
+                    sleepSecondsObj,
+                    dynamic_ncols=True,
+                    smoothing=True,
+                    bar_format="[SLEEPING] {n_fmt}s/{total_fmt}s |{l_bar}{bar}|",
+                )
+                for second in sleepSecondsBar:
+                    time.sleep(1)
+
+            print(f"\n\nFinished {action}ing!")
 
     def follow(self):
         self.run("follow")
