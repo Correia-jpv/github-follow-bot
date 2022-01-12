@@ -1,19 +1,27 @@
-<h1>GitHub Follow Bot</h1>
+<h2>GitHub Follow Bot</h2>&nbsp;<img align="right" width="35%" src="logo.png">
 
 <h2> Table of Contents</h2>
 
 - [Disclaimer](#disclaimer)
-- [How to Use](#how-to-use)
-	- [Install requirements](#install-requirements)
+- [Getting Started](#getting-started)
+	- [Install Requirements](#install-requirements)
 	- [Authenticate](#authenticate)
 		- [Get a GitHub Personal Access Token](#get-a-github-personal-access-token)
 		- [Add your GitHub username and PAT to `.env` file](#add-your-github-username-and-pat-to-env-file)
+- [How to Use](#how-to-use)
 	- [Follow](#follow)
+		- [Target user's followers](#target-users-followers)
+		- [Followers of the most popular users from a country](#followers-of-the-most-popular-users-from-a-country)
+		- [From a file](#from-a-file)
 	- [Unfollow](#unfollow)
+		- [All](#all)
+		- [Followers](#followers)
+		- [Non-followers](#non-followers)
+		- [From a file](#from-a-file-1)
 	- [Options](#options)
-		- [Maximum number of follow/unfollow actions](#maximum-number-of-followunfollow-actions)
+		- [Maximum follows/unfollows](#maximum-followsunfollows)
 		- [Speed](#speed)
-- [Future implementation](#future-implementation)
+- [Future Implementation](#future-implementation)
 - [Contributing](#contributing)
 - [Resources](#resources)
 
@@ -29,9 +37,9 @@
 
 [From GitHub Acceptable Use Policies](https://docs.github.com/en/github/site-policy/github-acceptable-use-policies#4-spam-and-inauthentic-activity-on-github)
 
-## How to Use
+## Getting Started
 
-### Install requirements
+### Install Requirements
 
 ```
 pip install -r requirements.txt
@@ -53,41 +61,54 @@ USER=YOUR_GITHUB_USERNAME
 TOKEN=YOUR_GITHUB_PERSONAL_ACCESS_TOKEN
 ```
 
+## How to Use
+
 ### Follow
 
-- Target user's followers
-	```
-	python bot_follow.py -t <TARGET_USER>
-	```
-- Most popular users' followers from a country ([list of valid countries](https://github.com/gayanvoice/top-github-users#readme))
-	```
-	python bot_follow.py -p <COUNTRY_NAME>
-	```
-- File (usernames separated by comma)
-	```
-	python bot_follow.py -f <FILENAME>
-	```
+#### Target user's followers
+```
+python bot_follow.py -t <TARGET_USER>
+```
+#### Followers of the most popular users from a country
+([list of valid countries](https://github.com/gayanvoice/top-github-users#readme))
+```
+python bot_follow.py -p <COUNTRY_NAME>
+```
+#### From a file
+Follow users from a pre-generated file (JSON)
+```
+python bot_follow.py -f <FILENAME>
+```
 
 ### Unfollow
 
 note: Unfollow order is FIFO, as in the most recently followed user will be the last to be unfollowed.
 
-- All
-	```
-	python bot_unfollow.py -a
-	```
-- Follow back
-	```
-	python bot_unfollow.py -fb
-	```
-- File (usernames separated by comma)
-	```
-	python bot_unfollow.py -f <FILENAME>
-	```
+#### All
+Unfollow all your followings
+```
+python bot_unfollow.py -a
+```
+#### Followers
+Only unfollow users who already follow you
+```
+python bot_unfollow.py -fo
+```
+#### Non-followers
+Only unfollow users who don't follow you back
+```
+python bot_unfollow.py -nf
+```
+#### From a file
+Unfollow users from a pre-generated file (JSON)
+```
+python bot_unfollow.py -f <FILENAME>
+```
 
 ### Options
 
-#### Maximum number of follow/unfollow actions
+#### Maximum follows/unfollows
+Set the maximum number of follow/unfollow actions
 ```
 -m 300
 ```
@@ -114,7 +135,7 @@ You can change these delays to your liking with the following arguments:
 	-smin 1500
 	```
 
-## Future implementation
+## Future Implementation
 
 - Schedule - Bot only performs actions between set time and sleeps after off-schedule
 - Add follow source - Grab followers from users listed in a file
