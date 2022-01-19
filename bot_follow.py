@@ -53,7 +53,7 @@ if args.popular:
         raise SystemExit(e)
 
     if res.status_code == 404:
-        raise ValueError("\nGiven country is not valid. Check README for the valid countries.\n")
+        raise ValueError(f"\n\"{args.popular}\" is not a valid country. Check README for the valid countries.\n")
 
     popularUsers = res.json()
 

@@ -217,6 +217,7 @@ class GithubAPIBot:
                 dynamic_ncols=True,
                 smoothing=True,
                 bar_format="[PROGRESS] {n_fmt}/{total_fmt} |{l_bar}{bar}|",
+                position=0,
                 leave=False,
             )
             for user in users:
@@ -244,6 +245,8 @@ class GithubAPIBot:
                     dynamic_ncols=True,
                     smoothing=True,
                     bar_format="[SLEEPING] {n_fmt}s/{total_fmt}s |{l_bar}{bar}|",
+                    position=1,
+                    leave=False,
                 )
                 for second in sleepSecondsBar:
                     time.sleep(1)
