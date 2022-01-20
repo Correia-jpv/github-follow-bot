@@ -148,7 +148,7 @@ class GithubAPIBot:
 
         # Get usernames from each page
         pages = tqdm(
-            range(int(lastPage), 1 + 1, -1),
+            range(int(lastPage), 0, -1),
             dynamic_ncols=True,
             smoothing=True,
             bar_format="[PROGRESS] {l_bar}{bar}|",
