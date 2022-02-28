@@ -141,6 +141,9 @@ class GithubAPIBot:
         except requests.exceptions.RequestException as e:
             raise SystemExit(e)
 
+        if 'Link' not in res.headers:
+            return []
+
         # Get pages of users
         pagesURLs = requests.utils.parse_header_links(res.headers["Link"])
         lastPageURL = pagesURLs[1]["url"]
