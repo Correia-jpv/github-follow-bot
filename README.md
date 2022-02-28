@@ -128,16 +128,18 @@ You can change these delays to your liking with the following arguments:
 	```
 - Minimum delay when rate limited
 	```
-	-smin 600
+	-slmin 600
 	```
 - Maximum delay when rate limited
 	```
-	-smin 1500
+	-slmin 1500
 	```
 
 ## Future Implementation
 
 - Schedule - Bot only performs actions between set time and sleeps after off-schedule
+- Max follow per source - Follow max `n` per popular user
+- Add follow source - Follow users per topic
 - Add follow source - Grab followers from users listed in a file
 - Email followed users - Send an email to followed users with templates (colaboration, follow back or custom)
 - Star `n` repositories of followed users
