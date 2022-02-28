@@ -20,6 +20,9 @@ parser.add_argument(
 parser.add_argument(
     "-slmax", "--sleep-max-limited", help="Max number of range to randomize sleep seconds when account limited"
 )
+parser.add_argument("-sh", "--sleep-hour", help="Hour for the bot to go to sleep")
+parser.add_argument("-sm", "--sleep-minute", help="Minute for the bot to go to sleep")
+parser.add_argument("-st", "--sleep-time", help="Total time (in hours) for the bot to sleep")
 args = parser.parse_args()
 
 sleepSecondsActionMin = int(args.sleep_min or 20)
@@ -39,6 +42,9 @@ bot = GithubAPIBot(
     sleepSecondsActionMax,
     sleepSecondsLimitedMin,
     sleepSecondsLimitedMax,
+    args.sleep_hour,
+    args.sleep_minute,
+    args.sleep_time,
     args.max_follow,
 )
 

@@ -1,4 +1,5 @@
 from base64 import b64encode
+import datetime
 import random
 import requests
 from requests.adapters import HTTPAdapter
@@ -19,6 +20,9 @@ class GithubAPIBot:
         sleepSecondsActionMax: int,
         sleepSecondsLimitedMin: int,
         sleepSecondsLimitedMax: int,
+        sleepHour=None,
+        sleepMinute=None,
+        sleepTime=None,
         maxAction=None,
     ):
         if not isinstance(username, str):
@@ -32,6 +36,9 @@ class GithubAPIBot:
         self.__sleepSecondsActionMax = sleepSecondsActionMax
         self.__sleepSecondsLimitedMin = sleepSecondsLimitedMin
         self.__sleepSecondsLimitedMax = sleepSecondsLimitedMax
+        self.__sleepHour = sleepHour
+        self.__sleepMinute = sleepMinute
+        self.__sleepTime = sleepTime
         self.__maxAction = maxAction
         self.__usersToAction = []
         self.__followings = []
@@ -108,6 +115,30 @@ class GithubAPIBot:
     @sleepSecondsLimitedMax.setter
     def sleepSecondsLimitedMax(self, value):
         self.__sleepSecondsLimitedMax = value
+
+    @property
+    def sleepHour(self):
+        return self.__sleepHour
+
+    @sleepHour.setter
+    def sleepHour(self, value):
+        self.__sleepHour = value
+
+    @property
+    def sleepMinute(self):
+        return self.__sleepMinute
+
+    @sleepMinute.setter
+    def sleepMinute(self, value):
+        self.__sleepMinute = value
+
+    @property
+    def sleepTime(self):
+        return self.__sleepTime
+
+    @sleepTime.setter
+    def sleepTime(self, value):
+        self.__sleepTime = value
 
     @property
     def maxAction(self):
@@ -212,6 +243,10 @@ class GithubAPIBot:
             if self.maxAction != None:
                 self.usersToAction = self.usersToAction[: min(len(self.usersToAction), int(self.maxAction))]
 
+            # Time for the bot to go to sleep
+            if self.sleepHour != None and self.sleepMinute != None and self.sleepTime != None:
+                sleepTime = nextSleepTime(int(self.__sleepHour), int(self.sleepMinute))
+
             # Start follow/unfollow
             print(f"\nStarting to {action}.\n")
             users = tqdm(
@@ -224,6 +259,14 @@ class GithubAPIBot:
                 leave=False,
             )
             for user in users:
+                
+                # Set the bot to sleep at the set time
+                if self.sleepHour != None and self.sleepMinute != None and self.sleepTime != None:
+                    timeNow = datetime.datetime.now()
+                    if timeNow.timestamp() > sleepTime.timestamp():
+                        sleepTime = nextSleepTime(int(self.__sleepHour), int(self.__sleepMinute))
+                        timeNow += datetime.timedelta(hours=int(self.__sleepTime))
+                        sleepUntil(timeNow.hour, random.randint(0, 59))
 
                 # Follow/unfollow user
                 try:
@@ -261,3 +304,35 @@ class GithubAPIBot:
 
     def unfollow(self):
         self.run("unfollow")
+
+def nextSleepTime(hour, minute):
+    timeNow = datetime.datetime.now()
+    future = datetime.datetime(timeNow.year, timeNow.month, timeNow.day, hour, minute)
+
+    if timeNow.timestamp() > future.timestamp():
+        future += datetime.timedelta(days=1)
+    return future
+
+def sleepUntil(hour, minute):
+    t = datetime.datetime.today()
+    future = datetime.datetime(t.year, t.month, t.day, hour, minute)
+
+    if t.timestamp() >= future.timestamp():
+        future += datetime.timedelta(days=1)
+    
+    print(f'\nSleeping... Waking up at {future.hour}:{future.minute}')
+    
+    sleepSeconds = int((future-t).total_seconds())
+    sleepSecondsObj = list(range(0, sleepSeconds))
+    sleepSecondsBar = tqdm(
+        sleepSecondsObj,
+        dynamic_ncols=True,
+        smoothing=True,
+        bar_format="[SLEEPING] {n_fmt}s/{total_fmt}s |{l_bar}{bar}|",
+        position=2,
+        leave=False,
+    )
+    for second in sleepSecondsBar:
+        time.sleep(1)
+
+    print(f'\nWaking up...')
