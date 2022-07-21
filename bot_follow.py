@@ -31,7 +31,7 @@ sleepSecondsLimitedMin = int(args.sleep_min_limited or 600)
 sleepSecondsLimitedMax = int(args.sleep_max_limited or 1500)
 
 load_dotenv()
-USER = os.getenv("USER")
+USER = os.getenv("GITHUB_USER")
 TOKEN = os.getenv("TOKEN")
 
 
