@@ -10,6 +10,8 @@ from urllib.parse import urlparse
 from urllib3.util import Retry
 
 
+user_cache = {}
+
 class GithubAPIBot:
     # Constructor
     def __init__(
@@ -24,6 +26,8 @@ class GithubAPIBot:
         sleepMinute=None,
         sleepTime=None,
         maxAction=None,
+        minFollowers=0,
+        healthyUser=False
     ):
         if not isinstance(username, str):
             raise TypeError("Missing/Incorrect username")
@@ -42,6 +46,8 @@ class GithubAPIBot:
         self.__maxAction = maxAction
         self.__usersToAction = []
         self.__followings = []
+        self.__minFollowers = minFollowers
+        self.__healthyUser = healthyUser
 
         # Requests' headers
         HEADERS = {
@@ -164,6 +170,29 @@ class GithubAPIBot:
     def followings(self, value):
         self.__followings = value
 
+    def getUser(self, username):
+        user = user_cache.get(username)
+        if user is None:
+            user = self.session.get("https://api.github.com/users/" + username).json()
+            user_cache.update({ username: user })
+        return user
+
+    def isHealtyUser(self, username):
+        user = self.getUser(username)
+        if user["followers"] == 0 or user["following"] == 0:
+            return False
+
+        # If the user has a low follow ratio, he is not a healthy user
+        follow_ratio = user["followers"] / user["following"]
+        if follow_ratio <= 1 or user["public_repos"] <= 10:
+            return False
+            
+        return True
+
+    def hasMinimumFollowers(self, username):
+        user = self.getUser(username)
+        return user["followers"] >= self.__minFollowers
+
     def getUsers(self, url="", maxAction=None, following=False):
         users = []
 
@@ -200,14 +229,23 @@ class GithubAPIBot:
                     if len(users) >= int(maxAction):
                         break
 
-                # Add username if it's not being followed already
                 if (
                     not following
                     and not (user["login"] in self.followings)
                     or following
                     and (user["login"] in self.followings)
                 ):
-                    users.append(user["login"])
+
+                    should_append = True;
+                    if self.__minFollowers > 0 and self.hasMinimumFollowers(user["login"]) == False:
+                        should_append = False
+
+                    if self.__healthyUser and self.isHealtyUser(user["login"]) == False:
+                        should_append = False
+
+                    if should_append:
+                        users.append(user["login"])
+
 
             # Check if we already have enough usernames
             if maxAction != None:
