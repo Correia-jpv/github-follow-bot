@@ -57,7 +57,7 @@ Make sure to enable the `user` scope and all subscopes inside of that permission
 
 Create a `.env` file on the project's root directory or edit `.env.sample` (rename to `.env`) and add your username and PAT.
 ```
-USER=YOUR_GITHUB_USERNAME
+GITHUB_USER=YOUR_GITHUB_USERNAME
 TOKEN=YOUR_GITHUB_PERSONAL_ACCESS_TOKEN
 ```
 
