@@ -1,89 +1,66 @@
-import argparse
-from datetime import datetime
-from dotenv import load_dotenv
+import requests
 import json
-import os
-from GithubAPIBot import GithubAPIBot
+import argparse
+import tqdm
+import time
+from base64 import b64encode
+from datetime import datetime
 
-# Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("-a", "--all", help="Unfollow all your followings", action="store_true")
-parser.add_argument("-fo", "--followers", help="Only unfollow users who already follow you", action="store_true")
-parser.add_argument("-nf", "--non-followers", help="Only unfollow users who don't follow you back", action="store_true")
-parser.add_argument("-f", "--file", help="File with usernames to Unfollow")
-parser.add_argument("-m", "--max-unfollow", help="Max Number of People to Unfollow")
-parser.add_argument("-smin", "--sleep-min", help="Min Number of range to randomize sleep seconds between actions")
-parser.add_argument("-smax", "--sleep-max", help="Max Number of range to randomize sleep seconds between actions")
-parser.add_argument(
-    "-slmin", "--sleep-min-limited", help="Min Number of range to randomize sleep seconds when account limited"
-)
-parser.add_argument(
-    "-slmax", "--sleep-max-limited", help="Max Number of range to randomize sleep seconds when account limited"
-)
-parser.add_argument("-sh", "--sleep-hour", help="Hour for the bot to go to sleep")
-parser.add_argument("-sm", "--sleep-minute", help="Minute for the bot to go to sleep")
-parser.add_argument("-st", "--sleep-time", help="Total time (in hours) for the bot to sleep")
+parser.add_argument('-t', '--token', help="Your GitHub Personal Access Token", required=True)
+parser.add_argument('-m', '--my-username', help="Your GitHub Username", required=True)
+parser.add_argument('-f', '--file', help="Followers File to Unfollow")
+parser.add_argument('-a', '--all', help="Unfollow all your followers", action="store_true")
+parser.add_argument('-mu', '--max-unfollow', help="Max Number of People to Unfollow")
 args = parser.parse_args()
 
-sleepSecondsActionMin = int(args.sleep_min or 3)
-sleepSecondsActionMax = int(args.sleep_max or 9)
-sleepSecondsLimitedMin = int(args.sleep_min_limited or 90)
-sleepSecondsLimitedMax = int(args.sleep_max_limited or 300)
-
-load_dotenv()
-USER = os.getenv("GITHUB_USER")
-TOKEN = os.getenv("TOKEN")
-
-
-bot = GithubAPIBot(
-    USER,
-    TOKEN,
-    sleepSecondsActionMin,
-    sleepSecondsActionMax,
-    sleepSecondsLimitedMin,
-    sleepSecondsLimitedMax,
-    args.sleep_hour,
-    args.sleep_minute,
-    args.sleep_time,
-    args.max_unfollow,
-)
-
-
-# Grab all following users
+HEADERS = {"Authorization": "Basic " + b64encode(str(args.my_username + ":" + args.token).encode('utf-8')).decode('utf-8')}
+sesh = requests.session()
+sesh.headers.update(HEADERS)
+users_to_unfollow = []
+mnof = args.max_followers
 if args.all:
-    bot.usersToAction.extend(bot.followings)
+    res = sesh.get("https://api.github.com/users/" + args.my_username + "/followers")
+    links_array = requests.utils.parse_header_links(res.headers['Link'].rstrip('>').replace('>,<', ',<'))
+    last_link = links_array[1]['url']
+    last_page = last_link.split('=')[-1]
+    print('Grabbing People to Unfollow\nThis may take a while... there are ' + str(last_page) + ' pages to go through.')
+    for page in tqdm.tqdm(range(1, int(last_page)), ncols=35, smoothing=True, bar_format='[PROGRESS] {n_fmt}/{total_fmt} | {bar}'):
+        res = sesh.get('https://api.github.com/users/' + args.my_username + "/followers?limit=100&page=" + str(page)).json()
+        for user in res:
+            users_to_unfollow.append(user['login'])
+        if mnof != None:
+            if len(users_to_unfollow) >= int(mnof):
+                break
+    print("Unfollowing Users... This WILL take a while!")
+    for user in tqdm.tqdm(users_to_unfollow, ncols=35, smoothing=True, bar_format='[PROGRESS] {n_fmt}/{total_fmt} | {bar}'):
+        while True:
+            time.sleep(5)
+            res = sesh.delete('https://api.github.com/user/following/' + user)
+            if res.status_code != 204:
+                print(res.status_code)
+                print("We may have been rate-limited, waiting until it stops!")
+                time.sleep(60)
+            else:
+                break
 else:
-    # Grab following users from given file
-    if args.file:
-        with open(args.file, "r+") as file:
-            try:
-                fileUsers = json.load(file)
-            except:
-                raise ValueError("\n JSON file is in incorrect format.")
-            followedFileUsers = [v for v in bot.followings if v in fileUsers]
-            bot.usersToAction.extend(followedFileUsers)
-
-    # Grab following users who are followers
-    if args.followers:
-        bot.getFollowers(following=True)
-
-    # Grab following users who aren't followers
-    if args.non_followers:
-        bot.getFollowers(following=True)
-        nonFollowersFollowings = [v for v in bot.followings if v not in bot.usersToAction]
-        bot.usersToAction.extend(nonFollowersFollowings)
-
-
-# Write users to be unfollowed to file
-filename = (
-    "./logs/"
-    + str(datetime.now().strftime("%m-%d-%Y__%H-%M"))
-    + "__"
-    + str(len(bot.usersToAction))
-    + "-unfollowed-users.json"
-)
-os.makedirs(os.path.dirname(filename), exist_ok=True)
-with open(filename, "w+") as f:
-    json.dump(bot.usersToAction, f, indent=4)
-
-bot.unfollow()
+    if not args.file:
+        print("Please pass a file to unfollow from with -f or use -a to unfollow everybody! Limit with -mu INT")
+    with open(args.file, 'r+') as f:
+        counter = 0
+        obj = json.load(f)
+        print("Unfollowing Users... This WILL take a while!")
+        for user in tqdm.tqdm(obj, ncols=35, smoothing=True, bar_format='[PROGRESS] {n_fmt}/{total_fmt} | {bar}'):
+            if mnof != None:
+                if counter >= int(mnof):
+                    break
+            while True:
+                time.sleep(5)
+                res = sesh.delete('https://api.github.com/user/following/' + user)
+                if res.status_code != 204:
+                    print(res.status_code)
+                    print("We may have been rate-limited, waiting until it stops!")
+                    time.sleep(60)
+                else:
+                    break
+            counter += 1
