@@ -172,23 +172,9 @@ class GithubAPIBot:
         except requests.exceptions.RequestException as e:
             raise SystemExit(e)
 
-        if 'Link' not in res.headers:
-            return []
-
-        # Get pages of users
-        pagesURLs = requests.utils.parse_header_links(res.headers["Link"])
-        lastPageURL = pagesURLs[1]["url"]
-        lastPage = parse_qs(urlparse(lastPageURL).query)["page"][0]
-
         # Get usernames from each page
-        pages = tqdm(
-            range(int(lastPage), 0, -1),
-            dynamic_ncols=True,
-            smoothing=True,
-            bar_format="[PROGRESS] {l_bar}{bar}|",
-            leave=False,
-        )
-        for page in pages:
+        page = 1
+        while True:
             try:
                 res = self.session.get(url + "?page=" + str(page)).json()
             except requests.exceptions.RequestException as e:
@@ -214,6 +200,11 @@ class GithubAPIBot:
                 if len(users) >= int(maxAction):
                     break
 
+            if res == []:
+                break
+            else:
+                page += 1
+        
         return users
 
     def getFollowers(self, username=None, following=None):
