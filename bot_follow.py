@@ -23,12 +23,16 @@ parser.add_argument(
 parser.add_argument("-sh", "--sleep-hour", help="Hour for the bot to go to sleep")
 parser.add_argument("-sm", "--sleep-minute", help="Minute for the bot to go to sleep")
 parser.add_argument("-st", "--sleep-time", help="Total time (in hours) for the bot to sleep")
+parser.add_argument("-mf", "--min-followers", help="Minimum number of followers the user should have to be followed")
+parser.add_argument("-hl", "--healthy-user", help="Follow only active and 'healthy' users", action="store_true")
 args = parser.parse_args()
 
 sleepSecondsActionMin = int(args.sleep_min or 20)
 sleepSecondsActionMax = int(args.sleep_max or 120)
 sleepSecondsLimitedMin = int(args.sleep_min_limited or 600)
 sleepSecondsLimitedMax = int(args.sleep_max_limited or 1500)
+minFollowers = int(args.min_followers or 0)
+healthyUser = bool(args.healthy_user or False)
 
 load_dotenv()
 USER = os.getenv("GITHUB_USER")
@@ -46,6 +50,8 @@ bot = GithubAPIBot(
     args.sleep_minute,
     args.sleep_time,
     args.max_follow,
+    minFollowers,
+    healthyUser
 )
 
 
