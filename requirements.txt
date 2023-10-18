@@ -1,4 +1,4 @@
 tqdm==4.33.0
-urllib3==1.26.5
+urllib3==1.26.18
 requests==2.25.1
 python-dotenv==0.19.2
